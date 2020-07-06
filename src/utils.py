@@ -31,6 +31,18 @@ def loaddata(input_size, feature):
     yval = np.float32(vallabelData[feature])
     return (X, y, Xval, yval)
 
+def loaddata_nosplit(input_size, feature):
+    import deepdish.io as ddio
+    mkdir_recursive('dataset')
+    trainData = ddio.load('dataset/targetdata.hdf5')
+    testlabelData= ddio.load('dataset/labeldata.hdf5')
+    X = np.float32(trainData[feature])
+    y = np.float32(testlabelData[feature])
+    att = np.concatenate((X,y), axis=1)
+    np.random.shuffle(att)
+    X , y = att[:,:input_size], att[:, input_size:]
+    return (X, y)
+
 class LearningRateSchedulerPerBatch(LearningRateScheduler):
     """ code from https://towardsdatascience.com/resuming-a-training-process-with-keras-3e93152ee11a
     Callback class to modify the default learning rate scheduler to operate each batch"""
@@ -152,8 +164,8 @@ def print_results(config, model, Xval, yval, classes):
     model2 = model
     if config.trained_model:
         model.load_weights(config.trained_model)
-    else:    
-        model.load_weights('models/{}-latest.hdf5'.format(config.feature))
+    #else:    
+    #    model.load_weights('models/{}-latest.hdf5'.format(config.feature))
     # to combine different trained models. On testing  
     if config.ensemble:
         model2.load_weight('models/weights-V1.hdf5')

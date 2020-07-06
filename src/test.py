@@ -54,23 +54,25 @@ def preprocess( split ):
             datalabel[feature] = list()
 
         def dataprocess():
-          input_size = config.input_size 
-          for num in tqdm(dataSet):
+            input_size = config.input_size 
+             #for num in tqdm(dataSet):
+            num = '119'
             from wfdb import rdrecord, rdann
             record = rdrecord('dataset/'+ num, smooth_frames= True)
             from sklearn import preprocessing
             signals0 = preprocessing.scale(np.nan_to_num(record.p_signal[:,0])).tolist()
             signals1 = preprocessing.scale(np.nan_to_num(record.p_signal[:,1])).tolist()
             from scipy.signal import find_peaks
-            peaks, _ = find_peaks(signals0, distance=100)
+            peaks, _ = find_peaks(signals0, distance=150)
 
-            feature0, feature1 = record.sig_name[0], record.sig_name[1]
+            feature0, feature1 = record.sig_name[0], record.sig_name[1]     #feature name e.g. ML11 V1 V2
 
             global lppened0, lappend1, dappend0, dappend1 
             lappend0 = datalabel[feature0].append
             lappend1 = datalabel[feature1].append
             dappend0 = datadict[feature0].append
             dappend1 = datadict[feature1].append
+
             # skip a first peak to have enough range of the sample 
             for peak in peaks[1:-1]:
             #for peak in tqdm(peaks[1:-1]):
@@ -89,14 +91,14 @@ def preprocess( split ):
               # remove some of "N" which breaks the balance of dataset 
               if len(annSymbol) == 1 and (annSymbol[0] in classes) and (annSymbol[0] != "N" or np.random.random()<0.15):
                 to_dict(annSymbol[0])
+            
  
         dataprocess()
-        #noises = add_noise(config)
-        for feature in ["MLII", "V1"]: 
-            datadict[feature]=np.array(datadict[feature])
-            datalabel[feature] = np.array(datalabel[feature])
+        
+        print(np.array(datadict["MLII"]).size)
+        
         '''
-        noises = add_noise(config)
+        #noises = add_noise(config)
         for feature in ["MLII", "V1"]: 
             d = np.array(datadict[feature])
             if len(d) > 15*10**3:
@@ -111,14 +113,21 @@ def preprocess( split ):
             
             noise_label = np.array([noise_label] * size) 
             datalabel[feature] = np.concatenate((l, noise_label))
+
         '''
+        #noises = add_noise(config)
+        for feature in ["MLII", "V1"]: 
+            datadict[feature]=np.array(datadict[feature])
+            datalabel[feature] = np.array(datalabel[feature])
+
         import deepdish as dd
         dd.io.save(datasetname, datadict)
         dd.io.save(labelsname, datalabel)
+        
 
     if split:
-        dataSaver(trainset, 'dataset/train.hdf5', 'dataset/trainlabel.hdf5')
-        dataSaver(testset, 'dataset/test.hdf5', 'dataset/testlabel.hdf5')
+        dataSaver(trainset, 'dataset/test/train.hdf5', 'dataset/test/trainlabel.hdf5')
+        #dataSaver(testset, 'dataset/test/test.hdf5', 'dataset/test/testlabel.hdf5')
     else:
         dataSaver(nums, 'dataset/targetdata.hdf5', 'dataset/labeldata.hdf5')
 

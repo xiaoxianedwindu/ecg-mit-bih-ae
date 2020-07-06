@@ -25,7 +25,7 @@ graph_arg.add_argument('--drop_rate', type=float, default = 0.2)
 train_arg = add_argument_group('train')
 train_arg.add_argument('--feature', type=str, default = "MLII",
                        help='one of MLII, V1, V2, V4, V5. Favorably MLII or V1')
-train_arg.add_argument('--epochs', type=int, default = 80)
+train_arg.add_argument('--epochs', type=int, default = 10)
 train_arg.add_argument('--batch', type=int, default = 256)
 train_arg.add_argument('--patience', type=int, default = 10)
 train_arg.add_argument('--min_lr', type=float, default = 0.00005)

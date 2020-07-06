@@ -9,11 +9,15 @@ from utils import *
 
 def train(config, X, y, Xval=None, yval=None):
     
-    classes = ['N','V','/','A','F','~']#,'L','R',f','j','E','a']#,'J','Q','e','S']
+    classes = ['A', 'E', 'j', 'L', 'N', '/', 'R', 'V']#['N','V','/','A','F','~']#,'L','R',f','j','E','a']#,'J','Q','e','S']
     Xe = np.expand_dims(X, axis=2)
     if not config.split:
         from sklearn.model_selection import train_test_split
-        Xe, Xvale, y, yval = train_test_split(Xe, y, test_size=0.2, random_state=1)
+        Xe, Xvale, y, yval = train_test_split(Xe, y, test_size=0.25, random_state=1)
+        (m, n) = y.shape
+        y = y.reshape((m, 1, n ))
+        (mvl, nvl) = yval.shape
+        yval = yval.reshape((mvl, 1, nvl))
     else:
         Xvale = np.expand_dims(Xval, axis=2)
         (m, n) = y.shape
@@ -48,11 +52,18 @@ def train(config, X, y, Xval=None, yval=None):
 
     #return model
 
+
 def main(config):
     print('feature:', config.feature)
     #np.random.seed(0)
-    (X,y, Xval, yval) = loaddata(config.input_size, config.feature)
-    train(config, X, y, Xval, yval)
+    if config.split == True:
+        (X,y, Xval, yval) = loaddata(config.input_size, config.feature)
+        train(config, X, y, Xval, yval)
+
+    else:
+        (X,y) = loaddata_nosplit(config.input_size, config.feature)
+        train(config, X, y)
+
 
 if __name__=="__main__":
     config = get_config()
