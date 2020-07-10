@@ -45,7 +45,7 @@ def preprocess( split ):
         trainset = [x for x in nums if x not in testset]
 
     def dataSaver(dataSet, datasetname, labelsname):
-        classes = ['A', 'E', 'j', 'L', 'N', '/', 'R', 'V']#['N','V','/','A','F','~']#,'L','R',f','j','E','a']#,'J','Q','e','S']  #['A', 'E', 'j', 'L', 'N', 'P', 'R', 'V']
+        classes = ['A', 'E', 'j', 'L', 'N', 'P', 'R', 'V']#['N','V','/','A','F','~']#,'L','R',f','j','E','a']#,'J','Q','e','S']  #['A', 'E', 'j', 'L', 'N', 'P', 'R', 'V']
         Nclass = len(classes)
         datadict, datalabel= dict(), dict()
 
@@ -54,8 +54,9 @@ def preprocess( split ):
             datalabel[feature] = list()
 
         def dataprocess():
-          input_size = config.input_size 
-          for num in tqdm(dataSet):
+            input_size = config.input_size 
+            #for num in tqdm(dataSet):
+            num= '102'
             from wfdb import rdrecord, rdann
             record = rdrecord('dataset/'+ num, smooth_frames= True)
             from sklearn import preprocessing
@@ -74,26 +75,35 @@ def preprocess( split ):
             # skip a first peak to have enough range of the sample 
             for peak in peaks[1:-1]:
             #for peak in tqdm(peaks[1:-1]):
-              start, end =  peak-input_size//2 , peak+input_size//2
-              ann = rdann('dataset/'+ num, extension='atr', sampfrom = start, sampto = end, return_label_elements=['symbol'])
-              
-              def to_dict(chosenSym):
-                y = [0]*Nclass
-                y[classes.index(chosenSym)] = 1
-                lappend0(y)
-                lappend1(y)
-                dappend0(signals0[start:end])
-                dappend1(signals1[start:end])
+                start, end =  peak-input_size//2 , peak+input_size//2
+                ann = rdann('dataset/'+ num, extension='atr', sampfrom = start, sampto = end, return_label_elements=['symbol'])
+                
+                def to_dict(chosenSym):
+                    y = [0]*Nclass
+                    y[classes.index(chosenSym)] = 1
+                    lappend0(y)
+                    lappend1(y)
+                    dappend0(signals0[start:end])
+                    dappend1(signals1[start:end])
 
-              annSymbol = ann.symbol
-              # remove some of "N" which breaks the balance of dataset 
-              #if len(annSymbol) == 1 and (annSymbol[0] in classes) and (annSymbol[0] != "N" or np.random.random()<0.15):
-              if len(annSymbol) == 1 and (annSymbol[0] in classes):
-                to_dict(annSymbol[0])
+                annSymbol = ann.symbol
+                if len(annSymbol) == 1:
+                    print(annSymbol[0])
+                    print('swapping symbol')
+                    #annSymbol[0].replace("\/", "P")
+                    if annSymbol[0] == "/":
+                        print("'/' detected")
+                        annSymbol[0] = 'P'
+                    print(annSymbol[0])
+
+                # remove some of "N" which breaks the balance of dataset 
+                #if len(annSymbol) == 1 and (annSymbol[0] in classes) and (annSymbol[0] != "N" or np.random.random()<0.15):
+                if len(annSymbol) == 1 and (annSymbol[0] in classes):
+                    to_dict(annSymbol[0])
  
         dataprocess()
         #noises = add_noise(config)
-        for feature in ["MLII", "V1"]: 
+        for feature in ['MLII', 'V1', 'V2', 'V4', 'V5']: 
             datadict[feature]=np.array(datadict[feature])
             datalabel[feature] = np.array(datalabel[feature])
         '''
@@ -118,8 +128,8 @@ def preprocess( split ):
         dd.io.save(labelsname, datalabel)
 
     if split:
-        dataSaver(trainset, 'dataset/train.hdf5', 'dataset/trainlabel.hdf5')
-        dataSaver(testset, 'dataset/test.hdf5', 'dataset/testlabel.hdf5')
+        dataSaver(trainset, 'dataset/train_debug.hdf5', 'dataset/trainlabel_debug.hdf5')
+        dataSaver(testset, 'dataset/test_debug.hdf5', 'dataset/testlabel_debug.hdf5')
     else:
         dataSaver(nums, 'dataset/targetdata.hdf5', 'dataset/labeldata.hdf5')
 

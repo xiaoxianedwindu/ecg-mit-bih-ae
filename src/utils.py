@@ -75,7 +75,7 @@ def plot_confusion_matrix(y_true, y_pred, classes, feature,
         else:
             title = 'Confusion matrix, without normalization'
 
-    cm = confusion_matrix(y_true, y_pred)
+    cm = confusion_matrix(y_true, y_pred, labels= classes)
     #classes = classes[unique_labels(y_true, y_pred)]
 
     if normalize:
@@ -107,7 +107,7 @@ def plot_confusion_matrix(y_true, y_pred, classes, feature,
                     color="white" if cm[i, j] > thresh else "black")
     fig.tight_layout()
     mkdir_recursive('results')
-    fig.savefig('results/confusionMatrix-'+feature+'.eps', format='eps', dpi=1000)
+    #fig.savefig('results/confusionMatrix-'+feature+'.eps', format='eps', dpi=1000)
     return ax
 
 
@@ -154,10 +154,10 @@ def PR_ROC_curves(ytrue, ypred, classes, ypred_mat):
         cax2.legend(loc=4)
 
     mkdir_recursive("results")
-    plt.savefig("results/model_prec_recall_and_roc.eps",
-        dpi=400,
-        format='eps',
-        bbox_inches='tight')
+    #plt.savefig("results/model_prec_recall_and_roc.eps",
+    #    dpi=400,
+    #    format='eps',
+    #    bbox_inches='tight')
     plt.close()
 
 def print_results(config, model, Xval, yval, classes):
@@ -178,7 +178,7 @@ def print_results(config, model, Xval, yval, classes):
     ytrue = np.argmax(yval,axis=1)
     yscore = np.array([ypred_mat[x][ytrue[x]] for x in range(len(yval))])
     ypred = np.argmax(ypred_mat, axis=1)
-    print(classification_report(ytrue, ypred))
+    print(classification_report(ytrue, ypred, labels=classes))
     plot_confusion_matrix(ytrue, ypred, classes, feature=config.feature, normalize=False)
     print("F1 score:", f1_score(ytrue, ypred, average=None))
     PR_ROC_curves(ytrue, ypred, classes, ypred_mat)

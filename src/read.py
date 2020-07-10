@@ -32,7 +32,7 @@ def readdata_nosplit(input_size, feature):
     return (X, y)
 
 def main(config):
-    classes = ['A', 'E', 'j', 'L', 'N', '/', 'R', 'V']
+    classes = ['A', 'E', 'j', 'L', 'N', 'P', 'R', 'V']
     #print('feature:', config.feature)
     #np.random.seed(0)
     if config.split == True:
@@ -50,7 +50,7 @@ def main(config):
         print(X.shape)
         print(y.shape)
         df = pd.DataFrame(y, columns=classes)
-        print(df)
+        #print(df)
         print(df.sum())
 
 

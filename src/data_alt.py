@@ -45,7 +45,7 @@ def preprocess( split ):
         trainset = [x for x in nums if x not in testset]
 
     def dataSaver(dataSet, datasetname, labelsname):
-        classes = ['A', 'E', 'j', 'L', 'N', '/', 'R', 'V']#['N','V','/','A','F','~']#,'L','R',f','j','E','a']#,'J','Q','e','S']  #['A', 'E', 'j', 'L', 'N', 'P', 'R', 'V']
+        classes = ['A', 'E', 'j', 'L', 'N', 'P', 'R', 'V']#['N','V','/','A','F','~']#,'L','R',f','j','E','a']#,'J','Q','e','S']  #['A', 'E', 'j', 'L', 'N', 'P', 'R', 'V']
         Nclass = len(classes)
         datadict, datalabel= dict(), dict()
 
@@ -86,6 +86,10 @@ def preprocess( split ):
                 dappend1(signals1[start:end])
 
               annSymbol = ann.symbol
+              if len(annSymbol) == 1:
+                if annSymbol[0] == "/":
+                    annSymbol[0] = 'P'
+
               # remove some of "N" which breaks the balance of dataset 
               #if len(annSymbol) == 1 and (annSymbol[0] in classes) and (annSymbol[0] != "N" or np.random.random()<0.15):
               if len(annSymbol) == 1 and (annSymbol[0] in classes):
@@ -93,7 +97,7 @@ def preprocess( split ):
  
         dataprocess()
         #noises = add_noise(config)
-        for feature in ["MLII", "V1"]: 
+        for feature in ['MLII', 'V1', 'V2', 'V4', 'V5']: 
             datadict[feature]=np.array(datadict[feature])
             datalabel[feature] = np.array(datalabel[feature])
         '''
