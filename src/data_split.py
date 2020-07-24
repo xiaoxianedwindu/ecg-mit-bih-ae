@@ -41,105 +41,91 @@ def preprocess( split ):
     features = ['MLII', 'V1', 'V2', 'V4', 'V5'] 
 
     if split :
-        testset = ['104', '113', '119', '208', '210']
+        testset = ['100', '103', '105','111',  '113',  '117',  '121',  '123',  '200',  '202',  '210','212','213',  '214','219','221','222','228','231',  '232',  '233',  '234']
         trainset = [x for x in nums if x not in testset]
 
     def dataSaver(dataSet, datasetname, labelsname):
         classes = ['A', 'E', 'j', 'L', 'N', 'P', 'R', 'V']#['N','V','/','A','F','~']#,'L','R',f','j','E','a']#,'J','Q','e','S']  #['A', 'E', 'j', 'L', 'N', 'P', 'R', 'V']
         Nclass = len(classes)
         datadict, datalabel= dict(), dict()
-        index = []
 
         for feature in features:
             datadict[feature] = list()
             datalabel[feature] = list()
 
         def dataprocess():
-            input_size = config.input_size
-            test = ['100','101', '103']
-            for num in tqdm(test):
-            #num= '101'
-                from wfdb import rdrecord, rdann, rdsamp
-                record = rdrecord('dataset/'+ num, smooth_frames= True)
-                r = rdsamp('dataset/'+ num)
-                #print(r)
-                signal0 = np.nan_to_num(np.array(r[0][:,0])).tolist()
-                signal1 = np.nan_to_num(np.array(r[0][:,1])).tolist()
-                #print('signal')
-                #print(signal0) 
-                #print(signal1)
+          input_size = config.input_size 
+          for num in tqdm(dataSet):
+            from wfdb import rdrecord, rdann
+            record = rdrecord('dataset/'+ num, smooth_frames= True)
+            from sklearn import preprocessing
+            signals0 = preprocessing.scale(np.nan_to_num(record.p_signal[:,0])).tolist()
+            signals1 = preprocessing.scale(np.nan_to_num(record.p_signal[:,1])).tolist()
+            from scipy.signal import find_peaks
+            peaks, _ = find_peaks(signals0, distance=150)
 
-                ann = rdann('dataset/'+ num, extension='atr')
+            feature0, feature1 = record.sig_name[0], record.sig_name[1]
 
-                r_peaks = ann.sample[0:-1]
-                #labels = ann.symbol[1:-1]
-                
-                #print('r_peaks')
-                #print(r_peaks)
-                #print('labels')
-                #print(len(labels))
-                global counter
-                counter = 0
-                feature0, feature1 = record.sig_name[0], record.sig_name[1]
+            global lppened0, lappend1, dappend0, dappend1 
+            lappend0 = datalabel[feature0].append
+            lappend1 = datalabel[feature1].append
+            dappend0 = datadict[feature0].append
+            dappend1 = datadict[feature1].append
+            # skip a first peak to have enough range of the sample 
+            for peak in peaks[1:-1]:
+            #for peak in tqdm(peaks[1:-1]):
+              start, end =  peak-input_size//2 , peak+input_size//2
+              ann = rdann('dataset/'+ num, extension='atr', sampfrom = start, sampto = end, return_label_elements=['symbol'])
+              
+              def to_dict(chosenSym):
+                y = [0]*Nclass
+                y[classes.index(chosenSym)] = 1
+                lappend0(y)
+                lappend1(y)
+                dappend0(signals0[start:end])
+                dappend1(signals1[start:end])
 
-                global lppened0, lappend1, dappend0, dappend1 
-                lappend0 = datalabel[feature0].append
-                lappend1 = datalabel[feature1].append
-                dappend0 = datadict[feature0].append
-                dappend1 = datadict[feature1].append
-                # skip a first peak to have enough range of the sample 
-                for peak in r_peaks[1:-1]:
-                #for peak in tqdm(r_peaks[1:-1]):
-                    start, end =  peak-input_size//2 , peak+input_size//2
-                    if start < 0:
-                        start = 0
-                    ann = rdann('dataset/'+ num, extension='atr', sampfrom = start, sampto = end, return_label_elements=['symbol'])
-                    
-                    def to_dict(chosenSym):
-                        y = [0]*Nclass
-                        y[classes.index(chosenSym)] = 1
-                        lappend0(y)
-                        lappend1(y)
-                        dappend0(signal0[start:end])
-                        dappend1(signal1[start:end])
+              annSymbol = ann.symbol
+              if len(annSymbol) == 1:
+                if annSymbol[0] == "/":
+                    annSymbol[0] = 'P'
 
-                    annSymbol = ann.symbol
-                    if len(annSymbol) == 1:
-                        #print(annSymbol[0])
-                        #print('swapping symbol')
-                        if annSymbol[0] == "/":
-                            #print("'/' detected")
-                            annSymbol[0] = 'P'
-                        #print(annSymbol[0])
-
-                    # remove some of "N" which breaks the balance of dataset 
-                    #if len(annSymbol) == 1 and (annSymbol[0] in classes) and (annSymbol[0] != "N" or np.random.random()<0.15):
-                    if len(annSymbol) == 1 and (annSymbol[0] in classes):
-                        to_dict(annSymbol[0])
-                        counter += 1
-
-                    
-                index.append((num, counter))
-
-        
+              # remove some of "N" which breaks the balance of dataset 
+              #if len(annSymbol) == 1 and (annSymbol[0] in classes) and (annSymbol[0] != "N" or np.random.random()<0.15):
+              if len(annSymbol) == 1 and (annSymbol[0] in classes):
+                to_dict(annSymbol[0])
+ 
         dataprocess()
         #noises = add_noise(config)
         for feature in ['MLII', 'V1', 'V2', 'V4', 'V5']: 
             datadict[feature]=np.array(datadict[feature])
             datalabel[feature] = np.array(datalabel[feature])
-        print(index)
-
-
+        '''
+        noises = add_noise(config)
+        for feature in ["MLII", "V1"]: 
+            d = np.array(datadict[feature])
+            if len(d) > 15*10**3:
+                n = np.array(noises["trainset"])
+            else:
+                n = np.array(noises["testset"]) 
+            datadict[feature]=np.concatenate((d,n))
+            size, _  = n.shape 
+            l = np.array(datalabel[feature])
+            noise_label = [0]*Nclass
+            noise_label[-1] = 1
+            
+            noise_label = np.array([noise_label] * size) 
+            datalabel[feature] = np.concatenate((l, noise_label))
+        '''
         import deepdish as dd
         dd.io.save(datasetname, datadict)
         dd.io.save(labelsname, datalabel)
-        dd.io.save('dataset/index_debug.hdf5', index)
 
     if split:
-        dataSaver(trainset, 'dataset/train_debug.hdf5', 'dataset/trainlabel_debug.hdf5')
-        dataSaver(testset, 'dataset/test_debug.hdf5', 'dataset/testlabel_debug.hdf5')
+        dataSaver(trainset, 'dataset/DS1.hdf5', 'dataset/DS1label.hdf5')
+        dataSaver(testset, 'dataset/DS2.hdf5', 'dataset/DS2label.hdf5')
     else:
-        dataSaver(nums, 'dataset/targetdata_debug.hdf5', 'dataset/labeldata_debug.hdf5')
+        dataSaver(nums, 'dataset/targetdata.hdf5', 'dataset/labeldata.hdf5')
 
 def main(config):
     def Downloadmitdb():

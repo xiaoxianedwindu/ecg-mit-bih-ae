@@ -43,6 +43,26 @@ def loaddata_nosplit(input_size, feature):
     X , y = att[:,:input_size], att[:, input_size:]
     return (X, y)
 
+def loaddata_LOGO(input_size, feature):
+    import deepdish.io as ddio
+    mkdir_recursive('dataset')
+    trainData = ddio.load('dataset/targetdata.hdf5')
+    testlabelData= ddio.load('dataset/labeldata.hdf5')
+    indexData= ddio.load('dataset/index.hdf5')
+    X = np.float32(trainData[feature])
+    y = np.float32(testlabelData[feature])
+    att = np.concatenate((X,y), axis=1)
+    np.random.shuffle(att)
+    X , y = att[:,:input_size], att[:, input_size:]
+    import pandas as pd
+    subjectLabel = (np.array(pd.DataFrame(indexData)[1]))
+    group = []
+    for x in subjectLabel:
+        for beat in range(x):    
+            group.append(x)
+    group = np.array(group)
+    return (X, y, group)
+
 class LearningRateSchedulerPerBatch(LearningRateScheduler):
     """ code from https://towardsdatascience.com/resuming-a-training-process-with-keras-3e93152ee11a
     Callback class to modify the default learning rate scheduler to operate each batch"""
@@ -75,7 +95,7 @@ def plot_confusion_matrix(y_true, y_pred, classes, feature,
         else:
             title = 'Confusion matrix, without normalization'
 
-    cm = confusion_matrix(y_true, y_pred, labels= classes)
+    cm = confusion_matrix(y_true, y_pred)
     #classes = classes[unique_labels(y_true, y_pred)]
 
     if normalize:
@@ -154,18 +174,20 @@ def PR_ROC_curves(ytrue, ypred, classes, ypred_mat):
         cax2.legend(loc=4)
 
     mkdir_recursive("results")
-    #plt.savefig("results/model_prec_recall_and_roc.eps",
-    #    dpi=400,
-    #    format='eps',
-    #    bbox_inches='tight')
+    '''
+    plt.savefig("results/model_prec_recall_and_roc.eps",
+        dpi=400,
+        format='eps',
+        bbox_inches='tight')
+    '''
     plt.close()
 
 def print_results(config, model, Xval, yval, classes):
     model2 = model
     if config.trained_model:
         model.load_weights(config.trained_model)
-    #else:    
-    #    model.load_weights('models/{}-latest.hdf5'.format(config.feature))
+    else:    
+        model.load_weights('models/{}-latest.hdf5'.format(config.feature))
     # to combine different trained models. On testing  
     if config.ensemble:
         model2.load_weight('models/weights-V1.hdf5')
@@ -178,10 +200,10 @@ def print_results(config, model, Xval, yval, classes):
     ytrue = np.argmax(yval,axis=1)
     yscore = np.array([ypred_mat[x][ytrue[x]] for x in range(len(yval))])
     ypred = np.argmax(ypred_mat, axis=1)
-    print(classification_report(ytrue, ypred, labels=classes))
+    print(classification_report(ytrue, ypred))
     plot_confusion_matrix(ytrue, ypred, classes, feature=config.feature, normalize=False)
     print("F1 score:", f1_score(ytrue, ypred, average=None))
-    PR_ROC_curves(ytrue, ypred, classes, ypred_mat)
+    #PR_ROC_curves(ytrue, ypred, classes, ypred_mat)
 
 def add_noise(config):
     noises = dict()

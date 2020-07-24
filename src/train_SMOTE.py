@@ -75,6 +75,7 @@ def train(config, X, y, Xval=None, yval=None):
             batch_size=config.batch,
             callbacks=callbacks,
             initial_epoch=initial_epoch)
+    print(Xe.shape, Xvale.shape, y.shape, yval.shape)
     print_results(config, model, Xvale, yval, classes)
 
     #return model

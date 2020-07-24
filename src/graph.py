@@ -12,6 +12,7 @@ def ECG_model(config):
     and 
     https://github.com/fernandoandreotti/cinc-challenge2017/blob/master/deeplearn-approach/train_model.py
     """
+
     def first_conv_block(inputs, config):
         layer = Conv1D(filters=config.filter_length,
                kernel_size=config.kernel_size,
@@ -99,7 +100,7 @@ def ECG_model(config):
         model.summary()
         return model
 
-    classes = ['A', 'E', 'j', 'L', 'N', '/', 'R', 'V']#['N','V','/','A','F','~']#,'L','R',f','j','E','a']#,'J','Q','e','S'] are too few or not in the trainset, so excluded out
+    classes = ['A', 'E', 'j', 'L', 'N', 'P', 'R', 'V']#['N','V','/','A','F','~']#,'L','R',f','j','E','a']#,'J','Q','e','S'] are too few or not in the trainset, so excluded out
     len_classes = len(classes)
 
     inputs = Input(shape=(config.input_size, 1), name='input')

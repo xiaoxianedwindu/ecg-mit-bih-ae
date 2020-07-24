@@ -7,24 +7,21 @@ from graph import ECG_model
 from config import get_config
 from utils import *
 
-def train(config, X, y, Xval=None, yval=None):
+def train(config, X, y, groups, Xval=None, yval=None):
     
-    classes = ['A', 'E', 'j', 'L', 'N', 'P', 'R', 'V']#['N','V','/','A','F','~']#,'L','R',f','j','E','a']#,'J','Q','e','S']
-    Xe = np.expand_dims(X, axis=2)
+    classes = ['A', 'E', 'j', 'L', 'N', 'P', 'R', 'V']
+    '''
+    #Xe = np.expand_dims(X, axis=2)
     if not config.split:
-        from sklearn.model_selection import train_test_split
-        Xe, Xvale, y, yval = train_test_split(Xe, y, test_size=0.25, random_state=1)
-        (m, n) = y.shape
-        y = y.reshape((m, 1, n ))
-        (mvl, nvl) = yval.shape
-        yval = yval.reshape((mvl, 1, nvl))
+        #from sklearn.model_selection import train_test_split
+        #Xe, Xvale, y, yval = train_test_split(Xe, y, test_size=0.25, random_state=1)
+        #(m, n) = y.shape
+        #y = y.reshape((m, 1, n ))
+        #(mvl, nvl) = yval.shape
+        #yval = yval.reshape((mvl, 1, nvl))
     else:
-        Xvale = np.expand_dims(Xval, axis=2)
-        (m, n) = y.shape
-        y = y.reshape((m, 1, n ))
-        (mvl, nvl) = yval.shape
-        yval = yval.reshape((mvl, 1, nvl))
-
+        print('ERROR, NOSPLIT')
+    
     if config.checkpoint_path is not None:
         model = model.load_model(config.checkpoint_path)
         initial_epoch = config.resume_epoch # put the resuming epoch
@@ -41,14 +38,42 @@ def train(config, X, y, Xval=None, yval=None):
             ModelCheckpoint('models/{}-latest.hdf5'.format(config.feature), monitor='val_loss', save_best_only=False, verbose=1, period=10)
             # , lr_decay_callback
     ]
-
+    
     model.fit(Xe, y,
             validation_data=(Xvale, yval),
             epochs=config.epochs,
             batch_size=config.batch,
             callbacks=callbacks,
             initial_epoch=initial_epoch)
-    print_results(config, model, Xvale, yval, classes, )
+    '''
+    import pandas as pd
+    #print_results(config, model, Xvale, yval, classes, )
+
+    from sklearn.model_selection import LeaveOneGroupOut, cross_val_score
+    logo = LeaveOneGroupOut()
+
+    print(X.shape)
+    print(y.shape)
+    df = pd.DataFrame(y, columns=classes)
+    #print(df)
+    print(df.sum())
+    y = df.idxmax(axis=1)
+    print (pd.unique(y))
+    
+    print(groups)
+    for train, test in logo.split(X, y, groups=groups):
+        #print("%s %s" % (train, test))
+        print("========")
+        print(train.shape)
+        print(test.shape)
+    
+
+    cv = logo.split(X, y, groups=groups)
+    from sklearn import svm
+    clf = svm.SVC(kernel='linear', C=1)
+    scores = cross_val_score(clf, X, y,groups = groups, cv=cv, verbose=1)
+    print(scores)
+
 
     #return model
 
@@ -61,8 +86,9 @@ def main(config):
         train(config, X, y, Xval, yval)
 
     else:
-        (X,y) = loaddata_nosplit(config.input_size, config.feature)
-        train(config, X, y)
+        (X,y, groups) = loaddata_LOGO(config.input_size, config.feature)
+        print(np.unique(groups).sum())
+        train(config, X, y, groups)
 
 
 if __name__=="__main__":

@@ -9,7 +9,7 @@ def add_argument_group(name):
 
 
 misc_arg = add_argument_group('misc')
-misc_arg.add_argument('--split', type=bool, default = True)
+misc_arg.add_argument('--split', type=bool, default = False)
 misc_arg.add_argument('--input_size', type=int, default = 256, 
                       help='multiplies of 256 by the structure of the model') 
 misc_arg.add_argument('--use_network', type=bool, default = False)
