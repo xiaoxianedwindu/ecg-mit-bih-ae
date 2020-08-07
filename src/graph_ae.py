@@ -98,7 +98,7 @@ def encoder_model(config):
         layer = ReflectionPadding1D()(layer)
 
         from keras.layers.wrappers import TimeDistributed
-        outputs = TimeDistributed(Dense(1, Activation(LeakyReLU(alpha=0.2))))(layer)
+        outputs = TimeDistributed(Dense(2, Activation(LeakyReLU(alpha=0.2))))(layer)
         #outputs = Dense(1, activation=Activation(LeakyReLU(alpha=0.2)))(layer)
 
         model = Model(inputs=inputs, outputs = outputs)
@@ -221,7 +221,7 @@ def decoder_model(config):
     classes = ['A', 'E', 'j', 'L', 'N', 'P', 'R', 'V']
     len_classes = len(classes)
 
-    inputs = Input(shape=(config.input_size, 1), name='input')
+    inputs = Input(shape=(config.input_size, 2), name='input')
     layer = first_conv_block(inputs, config)
     return output_block(layer, config)
 
@@ -234,14 +234,20 @@ def vae_model(config):
     model = Model(inputs, outputs, name='vae')
 
     from keras.losses import binary_crossentropy
-    reconstruction_loss = binary_crossentropy(inputs, outputs)
+    def kl_reconstruction_loss(true, pred):
+        # Reconstruction loss
+        reconstruction_loss = binary_crossentropy(K.flatten(true), K.flatten(pred)) * config.input_size
+        '''
+        # KL divergence loss
+        kl_loss = 1 + sigma - K.square(mu) - K.exp(sigma)
+        kl_loss = K.sum(kl_loss, axis=-1)
+        kl_loss *= -0.5
+        # Total loss = 50% rec + 50% KL divergence loss
+        return K.mean(reconstruction_loss + kl_loss)
+        '''
+        return reconstruction_loss
 
-    reconstruction_loss *= config.input_size
-    kl_loss = 1 + z_log_var - K.square(z_mean) - K.exp(z_log_var)
-    kl_loss = K.sum(kl_loss, axis=-1)
-    kl_loss *= -0.5
-    vae_loss = K.mean(reconstruction_loss + kl_loss)
-    vae.add_loss(vae_loss)
-    vae.compile(optimizer='adam')
+
+    model.compile(optimizer='adam', loss = kl_reconstruction_loss)
 
     return model

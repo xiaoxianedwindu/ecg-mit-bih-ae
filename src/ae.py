@@ -59,7 +59,7 @@ def train(config, X, y, Xval=None, yval=None):
             initial_epoch=initial_epoch)    
     '''
     #print_results(config, model, Xvale, yval, classes, )
-
+    '''
     encoder = encoder_model(config)
     encoder.fit(Xe, Xe,
             validation_data=(Xvale, Xvale),
@@ -85,12 +85,29 @@ def train(config, X, y, Xval=None, yval=None):
 
     Xde = decoder.predict(Xee)
     Xvalde = decoder.predict(Xvalee)
+    '''
+    vae = vae_model(config)
 
-    
+    vae.fit(Xe, Xe,
+            validation_data=(Xvale, Xvale),
+            epochs=3,
+            #epochs=config.epochs,
+            batch_size=config.batch,
+            callbacks=callbacks,
+            initial_epoch=initial_epoch)  
+
+    Xde = vae.predict(Xe)
+    Xvalde = vae.predict(Xvale)
+
+
     from matplotlib import pyplot as plt
     xaxis = np.arange(1,257)
     plt.plot(xaxis, Xvale[0,...])
     plt.plot(xaxis, Xvalde[0,...])
+    plt.plot(xaxis, Xvale[1,...])
+    plt.plot(xaxis, Xvalde[1,...])
+    plt.plot(xaxis, Xvale[3,...])
+    plt.plot(xaxis, Xvalde[3,...])
     plt.show()
 
 
@@ -137,7 +154,7 @@ def main(config):
         train(config, X, y, Xval, yval)
 
     else:
-        (X,y) = loaddata_nosplit(config.input_size, config.feature)
+        (X,y) = loaddata_nosplit_scaled(config.input_size, config.feature)
         train(config, X, y)
 
 

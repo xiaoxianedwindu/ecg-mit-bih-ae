@@ -56,6 +56,7 @@ def preprocess( split ):
 
         def dataprocess():
             input_size = config.input_size
+            #test = ['100']
             test = ['100','101', '103']
             for num in tqdm(test):
             #num= '101'
@@ -63,11 +64,57 @@ def preprocess( split ):
                 record = rdrecord('dataset/'+ num, smooth_frames= True)
                 r = rdsamp('dataset/'+ num)
                 #print(r)
-                signal0 = np.nan_to_num(np.array(r[0][:,0])).tolist()
-                signal1 = np.nan_to_num(np.array(r[0][:,1])).tolist()
+
+                
+                signal0 = np.nan_to_num(np.array(r[0][:,0]))
+                signal1 = np.nan_to_num(np.array(r[0][:,1]))
+                
+                '''
+                print('signal')
+                print(signal0.mean(), signal1.mean())
+                print(signal0.std(), signal1.std())
+                print(min(signal0), max(signal0)) 
+                print(min(signal1), max(signal1))
+                '''
+
+                signal0= ((signal0 - signal0.mean())/ signal0.std())
+                signal1= ((signal1 - signal1.mean())/ signal1.std())
+                '''
+                print('subtract mean and divide by std')
+                print(signal0.mean(), signal1.mean())
+                print(signal0.std(), signal1.std())
+                print(min(signal0), max(signal0)) 
+                print(min(signal1), max(signal1))
+                print("=======================")
+                '''
+
+                signal0 = signal0.tolist()
+                signal1 = signal1.tolist()
+
+                #from sklearn.preprocessing import minmax_scale
+                #signal0 = minmax_scale(np.nan_to_num(np.array(r[0][:,0]))).tolist()
+                #signal1 = minmax_scale(np.nan_to_num(np.array(r[0][:,1]))).tolist()
+
+                '''
+                from sklearn.preprocessing import normalize
+                signal0 = np.nan_to_num(np.array(r[0][:,0]))
+                print(signal0.shape)
+                signal0 = normalize(np.nan_to_num(np.array(r[0][:,0])).reshape(-1,1)).tolist()
+                signal1 = normalize(np.nan_to_num(np.array(r[0][:,1])).reshape(-1,1)).tolist()
+                print(len(signal0))
+            
+                signal0 = np.nan_to_num(np.array(r[0][:,0]))
+                signal1 = np.nan_to_num(np.array(r[0][:,1]))
+                signal0 = (signal0 - min(signal0) / max(signal0) - min(signal0)) 
+                signal1 = (signal1 - min(signal1) / (max(signal1) - min(signal1)))
+                signal0 = signal0.tolist()
+                signal1 = signal1.tolist()
+                '''
+
+
                 #print('signal')
-                #print(signal0) 
-                #print(signal1)
+                #print(min(signal0), max(signal0)) 
+                #print(min(signal1), max(signal1))
 
                 ann = rdann('dataset/'+ num, extension='atr')
 
@@ -91,8 +138,14 @@ def preprocess( split ):
                 for peak in r_peaks[1:-1]:
                 #for peak in tqdm(r_peaks[1:-1]):
                     start, end =  peak-input_size//2 , peak+input_size//2
-                    if start < 0:
-                        start = 0
+                    if start < 0: start = 0
+                    peak_actual = np.array(signal0[start:end]).argmax() - input_size//2 + peak
+                    start, end = peak_actual-input_size//2 , peak_actual+input_size//2
+                    if start < 0: start = 0
+                    
+                    #print(np.array(signal0[start:end]).max())
+                    #print(np.array(signal0[start:end]).argmax())
+
                     ann = rdann('dataset/'+ num, extension='atr', sampfrom = start, sampto = end, return_label_elements=['symbol'])
                     
                     def to_dict(chosenSym):

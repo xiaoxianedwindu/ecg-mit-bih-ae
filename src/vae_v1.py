@@ -3,7 +3,7 @@
 '''
 
 import keras
-from keras.layers import Conv2D, Conv2DTranspose, Input, Flatten, Dense, Lambda, Reshape
+from keras.layers import Conv1D, Conv2DTranspose, Input, Flatten, Dense, Lambda, Reshape
 from keras.layers import BatchNormalization
 from keras.models import Model
 from keras.datasets import mnist
@@ -12,33 +12,70 @@ from keras import backend as K
 import numpy as np
 import matplotlib.pyplot as plt
 
+from utils import *
+from config import get_config
+
 from tensorflow.python.framework.ops import disable_eager_execution
 disable_eager_execution()
 
+
+def Conv1DTranspose(input_tensor, filters, kernel_size, strides=2, padding='same', activation='relu', name='conv12d'):
+    """
+        input_tensor: tensor, with the shape (batch_size, time_steps, dims)
+        filters: int, output dimension, i.e. the output tensor will have the shape of (batch_size, time_steps, filters)
+        kernel_size: int, size of the convolution kernel
+        strides: int, convolution step size
+        padding: 'same' | 'valid'
+    """
+    x = Lambda(lambda x: K.expand_dims(x, axis=2))(input_tensor)
+    x = Conv2DTranspose(filters=filters, kernel_size=(kernel_size, 1), strides=(strides, 1), padding=padding, activation='relu', name = name)(x)
+    x = Lambda(lambda x: K.squeeze(x, axis=2))(x)
+    return x
+
+
 # Load MNIST dataset
-(input_train, target_train), (input_test, target_test) = mnist.load_data()
-print(target_test)
+#(input_train, target_train), (input_test, target_test) = mnist.load_data()
+
+config = get_config()
+
+(X,y) = loaddata_nosplit_scaled(config.input_size, config.feature)
+classes = ['A', 'E', 'j', 'L', 'N', 'P', 'R', 'V']#['N','V','/','A','F','~']#,'L','R',f','j','E','a']#,'J','Q','e','S']
+Xe = np.expand_dims(X, axis=2)
+from sklearn.model_selection import train_test_split
+Xe, Xvale, y, yval = train_test_split(Xe, y, test_size=0.25, random_state=1)
+#(m, n) = y.shape
+#y = y.reshape((m, 1, n ))
+#(mvl, nvl) = yval.shape
+#yval = yval.reshape((mvl, 1, nvl))
+import pandas as pd
+y = np.array(pd.DataFrame(y).idxmax(axis=1))
+yval = np.array(pd.DataFrame(yval).idxmax(axis=1))
+
+target_train = y
+target_test = yval 
 # Data & model configuration
-img_width, img_height = input_train.shape[1], input_train.shape[2]
-batch_size = 128
-no_epochs = 1
+#img_width, img_height = input_train.shape[1], input_train.shape[2]
+batch_size = 256
+no_epochs = 5
 validation_split = 0.2
 verbosity = 1
 latent_dim = 2
 num_channels = 1
 
 # Reshape data
-input_train = input_train.reshape(input_train.shape[0], img_height, img_width, num_channels)
-input_test = input_test.reshape(input_test.shape[0], img_height, img_width, num_channels)
-input_shape = (img_height, img_width, num_channels)
+#input_train = input_train.reshape(input_train.shape[0], img_height, img_width, num_channels)
+#input_test = input_test.reshape(input_test.shape[0], img_height, img_width, num_channels)
+input_train = Xe
+input_test = Xvale
+input_shape = (config.input_size, 1)
 
 # Parse numbers as floats
 input_train = input_train.astype('float32')
 input_test = input_test.astype('float32')
 
 # Normalize data
-input_train = input_train / 255
-input_test = input_test / 255
+#input_train = input_train / 255
+#input_test = input_test / 255
 
 # # =================
 # # Encoder
@@ -46,9 +83,9 @@ input_test = input_test / 255
 
 # Definition
 i       = Input(shape=input_shape, name='encoder_input')
-cx      = Conv2D(filters=8, kernel_size=3, strides=2, padding='same', activation='relu')(i)
+cx      = Conv1D(filters=8, kernel_size=3, strides=2, padding='same', activation='relu')(i)
 cx      = BatchNormalization()(cx)
-cx      = Conv2D(filters=16, kernel_size=3, strides=2, padding='same', activation='relu')(cx)
+cx      = Conv1D(filters=16, kernel_size=3, strides=2, padding='same', activation='relu')(cx)
 cx      = BatchNormalization()(cx)
 x       = Flatten()(cx)
 x       = Dense(20, activation='relu')(x)
@@ -58,7 +95,7 @@ sigma   = Dense(latent_dim, name='latent_sigma')(x)
 
 # Get Conv2D shape for Conv2DTranspose operation in decoder
 conv_shape = K.int_shape(cx)
-
+print(conv_shape)
 # Define sampling with reparameterization trick
 def sample_z(args):
   mu, sigma = args
@@ -80,14 +117,14 @@ encoder.summary()
 
 # Definition
 d_i   = Input(shape=(latent_dim, ), name='decoder_input')
-x     = Dense(conv_shape[1] * conv_shape[2] * conv_shape[3], activation='relu')(d_i)
+x     = Dense(conv_shape[1] * conv_shape[2], activation='relu')(d_i)
 x     = BatchNormalization()(x)
-x     = Reshape((conv_shape[1], conv_shape[2], conv_shape[3]))(x)
-cx    = Conv2DTranspose(filters=16, kernel_size=3, strides=2, padding='same', activation='relu')(x)
+x     = Reshape((conv_shape[1], conv_shape[2]))(x)
+cx    = Conv1DTranspose(x, filters=16, kernel_size=3, strides=2, padding='same', activation='relu')#(x)
 cx    = BatchNormalization()(cx)
-cx    = Conv2DTranspose(filters=8, kernel_size=3, strides=2, padding='same',  activation='relu')(cx)
-cx    = BatchNormalization()(cx)
-o     = Conv2DTranspose(filters=num_channels, kernel_size=3, activation='sigmoid', padding='same', name='decoder_output')(cx)
+#cx    = Conv1DTranspose(cx, filters=8, kernel_size=3, strides=2, padding='same',  activation='relu', name = 'conv12d2')#(cx)
+#cx    = BatchNormalization()(cx)
+o     = Conv1DTranspose(cx, filters=num_channels, kernel_size=3, activation='sigmoid', padding='same', name='decoder_output')#(cx)
 
 # Instantiate decoder
 decoder = Model(d_i, o, name='decoder')
@@ -105,7 +142,7 @@ vae.summary()
 # Define loss
 def kl_reconstruction_loss(true, pred):
   # Reconstruction loss
-  reconstruction_loss = binary_crossentropy(K.flatten(true), K.flatten(pred)) * img_width * img_height
+  reconstruction_loss = binary_crossentropy(K.flatten(true), K.flatten(pred)) * 256
   # KL divergence loss
   kl_loss = 1 + sigma - K.square(mu) - K.exp(sigma)
   kl_loss = K.sum(kl_loss, axis=-1)
@@ -117,7 +154,8 @@ def kl_reconstruction_loss(true, pred):
 vae.compile(optimizer='adam', loss=kl_reconstruction_loss)
 
 # Train autoencoder
-vae.fit(input_train, input_train, epochs = no_epochs, batch_size = batch_size, validation_split = validation_split)
+vae.fit(input_train, input_train, epochs = no_epochs, batch_size = batch_size, validation_data = (input_test, input_test))
+#vae.fit(input_train, input_train, epochs = no_epochs, batch_size = batch_size, validation_split = validation_split)
 
 # =================
 # Results visualization
@@ -166,7 +204,31 @@ def viz_decoded(encoder, decoder, data):
   plt.imshow(figure)
   plt.show()
 
+def plot_some_signals(vae, data):
+    x_vae_pred = vae.predict(data)
+
+    from matplotlib import pyplot as plt
+    xaxis = np.arange(0,config.input_size)
+    for count in range(5):
+        plt.plot(xaxis, x_vae_pred[count])
+    plt.title("vae reconstructed beats")
+    plt.xlabel("beat length")
+    plt.ybael("signal")
+    plt.show()
+
 # Plot results
 data = (input_test, target_test)
 viz_latent_space(encoder, data)
-viz_decoded(encoder, decoder, data)
+
+x_vae_pred = vae.predict(input_test)
+
+from matplotlib import pyplot as plt
+xaxis = np.arange(0,config.input_size)
+for count in range(5):
+    plt.plot(xaxis, x_vae_pred[count])
+plt.title("vae reconstructed beats")
+plt.xlabel("beat length")
+plt.ylabel("signal")
+plt.show()
+
+#viz_decoded(encoder, decoder, data)

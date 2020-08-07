@@ -43,6 +43,30 @@ def loaddata_nosplit(input_size, feature):
     X , y = att[:,:input_size], att[:, input_size:]
     return (X, y)
 
+def loaddata_nosplit_scaled(input_size, feature):
+    import deepdish.io as ddio
+    mkdir_recursive('dataset')
+    trainData = ddio.load('dataset/targetdata_scaled.hdf5')
+    testlabelData= ddio.load('dataset/labeldata_scaled.hdf5')
+    X = np.float32(trainData[feature])
+    y = np.float32(testlabelData[feature])
+    att = np.concatenate((X,y), axis=1)
+    np.random.shuffle(att)
+    X , y = att[:,:input_size], att[:, input_size:]
+    return (X, y)
+
+def loaddata_nosplit_scaled_vae(input_size, feature):
+    import deepdish.io as ddio
+    mkdir_recursive('dataset')
+    trainData = ddio.load('dataset/targetdata_scaled.hdf5')
+    testlabelData= ddio.load('dataset/labeldata_scaled.hdf5')
+    X = np.float32(trainData[feature])
+    y = np.float32(testlabelData[feature])
+    att = np.concatenate((X,y), axis=1)
+    np.random.shuffle(att)
+    X , y = att[:,:input_size], att[:, input_size:]
+    return (X, y)
+
 def loaddata_LOGO(input_size, feature):
     import deepdish.io as ddio
     mkdir_recursive('dataset')

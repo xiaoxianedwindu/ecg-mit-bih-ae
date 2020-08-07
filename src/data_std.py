@@ -39,8 +39,8 @@ from config import get_config
 def preprocess( split ):
     nums = ['100','101','103','105','106','107','108','109','111','112','113','115','116','117','118','119','121','122','123','124','200','201','202','203','205','207','208','209','210','212','213','214','215','217','219','220','221','222','223','228','230','231','232','233','234']
     #nums = ['100','101','102','103','104','105','106','107','108','109','111','112','113','114','115','116','117','118','119','121','122','123','124','200','201','202','203','205','207','208','209','210','212','213','214','215','217','219','220','221','222','223','228','230','231','232','233','234']
-    #features = ['MLII'] 
-    features = ['MLII', 'V1', 'V2', 'V4', 'V5'] 
+    features = ['MLII', 'V1'] 
+    #features = ['MLII', 'V1', 'V2', 'V4', 'V5'] 
 
 
     if split :
@@ -64,12 +64,16 @@ def preprocess( split ):
             record = rdrecord('dataset/'+ num, smooth_frames= True)
             r = rdsamp('dataset/'+ num)
             #print(r)
-            signal0 = np.nan_to_num(np.array(r[0][:,0])).tolist()
-            signal1 = np.nan_to_num(np.array(r[0][:,1])).tolist()
+
+            signal0 = np.nan_to_num(np.array(r[0][:,0]))
+            signal1 = np.nan_to_num(np.array(r[0][:,1]))
+            signal0 = ((signal0 - signal0.mean())/signal0.std()).tolist()
+            signal1 = ((signal1 - signal1.mean())/signal1.std()).tolist()
+
             #print('signal')
             #print(signal0)
             #print(signal1)
-
+            
             ann = rdann('dataset/'+ num, extension='atr')
 
             r_peaks = ann.sample[0:-1]
@@ -92,8 +96,10 @@ def preprocess( split ):
             # skip a first peak to have enough range of the sample 
             for peak in r_peaks[1:-1]:
                 start, end =  peak-input_size//2 , peak+input_size//2
-                if start < 0:
-                    start = 0
+                if start < 0: start = 0
+                peak_actual = np.array(signal0[start:end]).argmax() - input_size//2 + peak
+                start, end = peak_actual-input_size//2 , peak_actual+input_size//2
+                if start < 0: start = 0
                 ann = rdann('dataset/'+ num, extension='atr', sampfrom = int(start), sampto = int(end), return_label_elements=['symbol'])
                 
                 def to_dict(chosenSym):
@@ -124,20 +130,20 @@ def preprocess( split ):
         dataprocess()
         #noises = add_noise(config)
         #for feature in ['MLII', 'V1', 'V2', 'V4', 'V5']: 
-        for feature in ['MLII']: 
+        for feature in ['MLII', 'V1']: 
             datadict[feature]=np.array(datadict[feature])
             datalabel[feature] = np.array(datalabel[feature])
 
         import deepdish as dd
         dd.io.save(datasetname, datadict)
         dd.io.save(labelsname, datalabel)
-        dd.io.save('dataset/index.hdf5', index)
+        dd.io.save('dataset/index_std.hdf5', index)
 
     if split:
         dataSaver(trainset, 'dataset/train.hdf5', 'dataset/trainlabel.hdf5')
         dataSaver(testset, 'dataset/test.hdf5', 'dataset/testlabel.hdf5')
     else:
-        dataSaver(nums, 'dataset/targetdata.hdf5', 'dataset/labeldata.hdf5')
+        dataSaver(nums, 'dataset/targetdata_std.hdf5', 'dataset/labeldata_std.hdf5')
 
 def main(config):
     def Downloadmitdb():

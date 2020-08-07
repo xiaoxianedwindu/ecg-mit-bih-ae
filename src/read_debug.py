@@ -54,6 +54,7 @@ def main(config):
 
 
     else:
+        #(X,y, groups) = readdata_nosplit(128, config.feature)
         (X,y, groups) = readdata_nosplit(config.input_size, config.feature)
         Xe = np.expand_dims(X, axis=2)
         #(m, n) = y.shape
@@ -65,6 +66,16 @@ def main(config):
         print(df.sum())
         y = df.idxmax(axis=1)
         print (pd.unique(y))
+
+
+        from matplotlib import pyplot as plt
+        print(X.min(), X.max())
+        xaxis = np.arange(0,config.input_size)
+        for count in range(5):
+            plt.plot(xaxis, X[2265+count])
+        plt.show()
+        
+        '''
         from sklearn.model_selection import LeaveOneGroupOut, cross_val_score
         logo = LeaveOneGroupOut()
         for train, test in logo.split(X, y, groups=groups):
@@ -175,6 +186,7 @@ def main(config):
         clf = svm.SVC(kernel='linear', C=1)
         scores = cross_val_score(clf, X, y,groups = groups, cv=cv)
         print(scores)
+        '''
 
 
 

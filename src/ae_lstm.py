@@ -66,8 +66,8 @@ def train(config, X, y, Xval=None, yval=None):
     decoded = RepeatVector(timesteps)(encoded)
     decoded = LSTM(timesteps, activation=LeakyReLU(alpha=0.2))(decoded)
 
-    sequence_autoencoder = Model(inputs, decoded)
-    autoencoder = Model(inputs, encoded)
+    autoencoder = Model(inputs, decoded)
+    #autoencoder = Model(inputs, encoded)
 
     adam = Adam(lr=0.1, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
     autoencoder.compile(optimizer= adam,
@@ -77,13 +77,13 @@ def train(config, X, y, Xval=None, yval=None):
 
     autoencoder.fit(X, X,
             validation_data=(Xval, Xval),
-            epochs=config.epochs,
+            epochs=3,
             batch_size=config.batch,
             callbacks=callbacks,
             initial_epoch=initial_epoch)
 
-    Xae = autoencoder.predict(Xe)
-    Xvalae = autoencoder.predict(Xvalae)
+    Xae = autoencoder.predict(X)
+    Xvalae = autoencoder.predict(Xval)
 
     #print_results(config, decoder, Xvalee, yval, classes, )
     model = ECG_model(config)
