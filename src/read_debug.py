@@ -22,6 +22,9 @@ def readdata(input_size, feature):
 def readdata_nosplit(input_size, feature):
     import deepdish.io as ddio
     mkdir_recursive('dataset')
+    #trainData = ddio.load('dataset/targetdata_std.hdf5')
+    #testlabelData= ddio.load('dataset/labeldata_std.hdf5')
+    #indexData= ddio.load('dataset/index_std.hdf5')
     trainData = ddio.load('dataset/targetdata_debug.hdf5')
     testlabelData= ddio.load('dataset/labeldata_debug.hdf5')
     indexData= ddio.load('dataset/index_debug.hdf5')

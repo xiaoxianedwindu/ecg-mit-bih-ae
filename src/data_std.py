@@ -64,11 +64,13 @@ def preprocess( split ):
             record = rdrecord('dataset/'+ num, smooth_frames= True)
             r = rdsamp('dataset/'+ num)
             #print(r)
-
+            from sklearn.preprocessing import minmax_scale
             signal0 = np.nan_to_num(np.array(r[0][:,0]))
             signal1 = np.nan_to_num(np.array(r[0][:,1]))
-            signal0 = ((signal0 - signal0.mean())/signal0.std()).tolist()
-            signal1 = ((signal1 - signal1.mean())/signal1.std()).tolist()
+            signal0 = minmax_scale((signal0 - signal0.mean())/signal0.std()).tolist()
+            signal1 = minmax_scale((signal1 - signal1.mean())/signal1.std()).tolist()
+            #signal0 = ((signal0 - signal0.mean())/signal0.std()).tolist()
+            #signal1 = ((signal1 - signal1.mean())/signal1.std()).tolist()
 
             #print('signal')
             #print(signal0)

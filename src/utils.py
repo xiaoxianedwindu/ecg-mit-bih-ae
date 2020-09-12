@@ -51,9 +51,33 @@ def loaddata_nosplit_scaled(input_size, feature):
     X = np.float32(trainData[feature])
     y = np.float32(testlabelData[feature])
     att = np.concatenate((X,y), axis=1)
-    np.random.shuffle(att)
+    #np.random.shuffle(att)
     X , y = att[:,:input_size], att[:, input_size:]
     return (X, y)
+
+def loaddata_nosplit_scaled_index(input_size, feature):
+    import deepdish.io as ddio
+    mkdir_recursive('dataset')
+    trainData = ddio.load('dataset/targetdata_scaled.hdf5')
+    testlabelData= ddio.load('dataset/labeldata_scaled.hdf5')
+    indexData= ddio.load('dataset/index_scaled.hdf5')
+
+    X = np.float32(trainData[feature])
+    y = np.float32(testlabelData[feature])
+    att = np.concatenate((X,y), axis=1)
+    X , y = att[:,:input_size], att[:, input_size:]
+
+    import pandas as pd
+    subjectLabel = (np.array(pd.DataFrame(indexData)[1]))
+    nums = ['100','101','103','105','106','107','108','109','111','112','113','115','116','117','118','119','121','122','123','124','200','201','202','203','205','207','208','209','210','212','213','214','215','217','219','220','221','222','223','228','230','231','232','233','234']
+    num_index = 0
+    group = []
+    for x in subjectLabel:
+        for beat in range(x):    
+            group.append(nums[num_index])
+        num_index += 1
+    #group = np.array(group)
+    return (X, y, group)
 
 def loaddata_nosplit_scaled_vae(input_size, feature):
     import deepdish.io as ddio

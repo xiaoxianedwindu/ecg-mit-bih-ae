@@ -100,7 +100,7 @@ def ECG_model(config):
         model.summary()
         return model
 
-    classes = ['A', 'E', 'j', 'L', 'N', 'P', 'R', 'V']#['N','V','/','A','F','~']#,'L','R',f','j','E','a']#,'J','Q','e','S'] are too few or not in the trainset, so excluded out
+    classes = ['A', 'E', 'j', 'L', 'N', 'P', 'R', 'V']
     len_classes = len(classes)
 
     inputs = Input(shape=(config.input_size, 1), name='input')

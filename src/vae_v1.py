@@ -56,7 +56,7 @@ target_test = yval
 # Data & model configuration
 #img_width, img_height = input_train.shape[1], input_train.shape[2]
 batch_size = 256
-no_epochs = 5
+no_epochs = 50
 validation_split = 0.2
 verbosity = 1
 latent_dim = 2
